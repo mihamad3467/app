@@ -96,6 +96,84 @@ SURAHS = [
     "الكوثر", "الكافرون", "النصر", "المسد", "الإخلاص", "الفلق", "الناس",
 ]
 
+ARABIC_ALPHABET = "ابتثجحخدذرزسشصضطظعغفقكلمنهوي"
+ARABIC_NORMALIZATION = str.maketrans(
+    {
+        "أ": "ا",
+        "إ": "ا",
+        "آ": "ا",
+        "ٱ": "ا",
+        "ى": "ي",
+    }
+)
+
+
+def arabic_sort_key(value: str) -> tuple[tuple[int, ...], str]:
+    normalized = value.translate(ARABIC_NORMALIZATION).replace(" ", "")
+    if normalized.startswith("ال"):
+        normalized = normalized[2:]
+    ranks = tuple(
+        ARABIC_ALPHABET.index(letter)
+        if letter in ARABIC_ALPHABET
+        else len(ARABIC_ALPHABET)
+        for letter in normalized
+    )
+    return ranks, normalized
+
+
+SURAH_MENU = sorted(
+    ((number, name) for number, name in enumerate(SURAHS, start=1)),
+    key=lambda item: arabic_sort_key(item[1]),
+)
+
+POPULAR_RECITER_ALIASES = (
+    "عبد الرحمن مسعد",
+    "عبد الباسط عبد الصمد",
+    "محمود خليل الحصري",
+    "محمد صديق المنشاوي",
+    "مشاري العفاسي",
+    "عبد الرحمن السديس",
+    "سعود الشريم",
+    "ماهر المعيقلي",
+    "ياسر الدوسري",
+    "سعد الغامدي",
+    "فارس عباد",
+    "ناصر القطامي",
+    "عبد الله عواد الجهني",
+    "أحمد بن علي العجمي",
+    "أبو بكر الشاطري",
+    "صلاح بو خاطر",
+    "علي جابر",
+    "إدريس أبكر",
+    "هاني الرفاعي",
+    "محمد أيوب",
+    "محمود علي البنا",
+    "مصطفى إسماعيل",
+    "خالد الجليل",
+    "محمد اللحيدان",
+    "بندر بليلة",
+    "إسلام صبحي",
+)
+
+ABDULRAHMAN_MOSAD_AUDIO = {
+    "moshaf_id": 210021,
+    "reciter_id": 210021,
+    "name": "عبد الرحمن مسعد",
+    "rewaya": "حفص عن عاصم — مصدر خارجي",
+    "server": "https://archive.org/download/010_20221110",
+    "surah_list": "10,19,23,29,32,49,73,78,87,88,100,107",
+}
+
+
+def reciter_rank(name: str) -> int | None:
+    normalized_name = name.translate(ARABIC_NORMALIZATION).replace(" ", "")
+    for rank, alias in enumerate(POPULAR_RECITER_ALIASES):
+        normalized_alias = alias.translate(ARABIC_NORMALIZATION).replace(" ", "")
+        if normalized_alias in normalized_name:
+            return rank
+    return None
+
+
 HADITHS = [
     ("إنما الأعمال بالنيات، وإنما لكل امرئ ما نوى.", "صحيح البخاري", "1"),
     ("من كان يؤمن بالله واليوم الآخر فليقل خيرًا أو ليصمت.", "صحيح البخاري", "6018"),
@@ -115,7 +193,56 @@ HADITHS = [
     ("تبسمك في وجه أخيك لك صدقة.", "سنن الترمذي", "1956"),
     ("الراحمون يرحمهم الرحمن، ارحموا من في الأرض يرحمكم من في السماء.", "سنن الترمذي", "1924"),
     ("من غشنا فليس منا.", "صحيح مسلم", "101"),
+    ("من يرد الله به خيرًا يفقهه في الدين.", "صحيح البخاري", "71"),
+    ("المؤمن للمؤمن كالبنيان يشد بعضه بعضًا.", "صحيح البخاري", "481"),
+    ("المؤمنون كرجل واحد، إن اشتكى رأسه تداعى له سائر الجسد بالحمى والسهر.", "صحيح مسلم", "2586"),
+    ("لا ضرر ولا ضرار.", "سنن ابن ماجه", "2341"),
+    ("اتقوا النار ولو بشق تمرة، فمن لم يجد فبكلمة طيبة.", "صحيح البخاري", "1413"),
+    ("من كان يؤمن بالله واليوم الآخر فليكرم ضيفه.", "صحيح البخاري", "6018"),
+    ("خير الناس أنفعهم للناس.", "المعجم الأوسط", "5787"),
+    ("من سلك طريقًا يلتمس فيه علمًا سهل الله له به طريقًا إلى الجنة.", "صحيح مسلم", "2699"),
+    ("الحياء لا يأتي إلا بخير.", "صحيح البخاري", "6117"),
+    ("ليس الشديد بالصرعة، إنما الشديد الذي يملك نفسه عند الغضب.", "صحيح البخاري", "6114"),
+    ("من لا يشكر الناس لا يشكر الله.", "سنن الترمذي", "1954"),
+    ("أحب الناس إلى الله أنفعهم للناس.", "المعجم الأوسط", "6026"),
+    ("من دل على خير فله مثل أجر فاعله.", "صحيح مسلم", "1893"),
+    ("البر حسن الخلق، والإثم ما حاك في نفسك وكرهت أن يطلع عليه الناس.", "صحيح مسلم", "2553"),
+    ("اتق الله حيثما كنت، وأتبع السيئة الحسنة تمحها، وخالق الناس بخلق حسن.", "سنن الترمذي", "1987"),
+    ("لا يؤمن أحدكم حتى أكون أحب إليه من والده وولده والناس أجمعين.", "صحيح البخاري", "15"),
+    ("من كان في حاجة أخيه كان الله في حاجته.", "صحيح البخاري", "2442"),
+    ("والله في عون العبد ما كان العبد في عون أخيه.", "صحيح مسلم", "2699"),
+    ("من تواضع لله رفعه الله.", "صحيح مسلم", "2588"),
+    ("لا تحقرن من المعروف شيئًا ولو أن تلقى أخاك بوجه طلق.", "صحيح مسلم", "2626"),
+    ("إن الله لا ينظر إلى صوركم وأموالكم، ولكن ينظر إلى قلوبكم وأعمالكم.", "صحيح مسلم", "2564"),
+    ("يسروا ولا تعسروا، وبشروا ولا تنفروا.", "صحيح البخاري", "69"),
+    ("اغتنم خمسًا قبل خمس: حياتك قبل موتك، وصحتك قبل سقمك، وفراغك قبل شغلك، وشبابك قبل هرمك، وغناك قبل فقرك.", "المستدرك على الصحيحين", "7846"),
 ]
+
+HADITHS_PATH = BASE_DIR / "hadiths_ar.json"
+hadith_cache: list[tuple[str, str, str]] = []
+
+
+def load_hadiths() -> list[tuple[str, str, str]]:
+    global hadith_cache
+    if hadith_cache:
+        return hadith_cache
+    try:
+        payload = json.loads(HADITHS_PATH.read_text(encoding="utf-8"))
+        loaded = [
+            (
+                str(item["hadeeth"]).strip(),
+                str(item["source"]).strip(),
+                str(item.get("id", "")),
+            )
+            for item in payload
+            if item.get("hadeeth") and item.get("source")
+        ]
+        if len(loaded) >= 250:
+            hadith_cache = loaded
+    except (OSError, ValueError, TypeError, KeyError) as error:
+        logger.warning("Local hadith collection could not be loaded: %s", error)
+    return hadith_cache or HADITHS
+
 
 AZKAR = {
     "morning": [
@@ -498,12 +625,12 @@ def page_buttons(page: int, total: int, prefix: str, back: str = "home") -> list
 
 async def show_quran(update: Update, page: int) -> None:
     per_page = 18
-    total_pages = (len(SURAHS) + per_page - 1) // per_page
+    total_pages = (len(SURAH_MENU) + per_page - 1) // per_page
     page = max(0, min(page, total_pages - 1))
     start_index = page * per_page
     buttons = [
-        InlineKeyboardButton(f"{index + 1}. {name}", callback_data=f"surah:{index + 1}")
-        for index, name in enumerate(SURAHS[start_index : start_index + per_page], start_index)
+        InlineKeyboardButton(f"{number}. {name}", callback_data=f"surah:{number}")
+        for number, name in SURAH_MENU[start_index : start_index + per_page]
     ]
     rows = [buttons[i : i + 3] for i in range(0, len(buttons), 3)]
     rows += page_buttons(page, total_pages, "quran", "home")
@@ -565,39 +692,56 @@ async def load_reciters() -> list[dict[str, Any]]:
         return reciter_cache
     try:
         payload = await fetch_json("https://mp3quran.net/api/v3/reciters?language=ar")
-        result: list[dict[str, Any]] = []
+        popular_result: list[dict[str, Any]] = []
+        fallback_result: list[dict[str, Any]] = []
         for reciter in payload.get("reciters", []):
-            for moshaf in reciter.get("moshaf") or []:
+            name = reciter.get("name") or ""
+            rank = reciter_rank(name)
+            moshafs = [
+                moshaf
+                for moshaf in reciter.get("moshaf") or []
+                if moshaf.get("server") and moshaf.get("surah_list")
+            ]
+            hafs_moshafs = [
+                moshaf
+                for moshaf in moshafs
+                if moshaf.get("rewaya_id") == 1
+                or "حفص عن عاصم" in (moshaf.get("name") or "")
+            ]
+            # Prefer the well-known Hafs recording, but keep a usable
+            # recording for a famous reciter when the API labels it differently.
+            selected_moshafs = hafs_moshafs or moshafs[:1]
+            for moshaf in selected_moshafs:
                 if not moshaf.get("server") or not moshaf.get("surah_list"):
                     continue
-                # Keep one reading only: Hafs from Asim. This removes other
-                # riwayat while preserving both the regular and special Hafs
-                # recordings when a reciter provides them.
-                if (
-                    moshaf.get("rewaya_id") != 1
-                    and "حفص عن عاصم" not in (moshaf.get("name") or "")
-                ):
-                    continue
-                result.append(
-                    {
-                        "moshaf_id": moshaf["id"],
-                        "reciter_id": reciter["id"],
-                        "name": reciter["name"],
-                        "rewaya": moshaf.get("name") or "الرواية المتاحة",
-                        "server": moshaf["server"],
-                        "surah_list": moshaf["surah_list"],
-                    }
-                )
+                item = {
+                    "moshaf_id": moshaf["id"],
+                    "reciter_id": reciter["id"],
+                    "name": name,
+                    "rewaya": moshaf.get("name") or "الرواية المتاحة",
+                    "server": moshaf["server"],
+                    "surah_list": moshaf["surah_list"],
+                }
+                fallback_result.append(item)
+                if rank is not None:
+                    popular_result.append(item)
+
+        if not any(item["name"] == ABDULRAHMAN_MOSAD_AUDIO["name"] for item in popular_result):
+            popular_result.append(ABDULRAHMAN_MOSAD_AUDIO.copy())
+
+        result = popular_result or fallback_result
         result.sort(
             key=lambda item: (
-                0 if "حفص عن عاصم" in item["rewaya"] else 1,
+                reciter_rank(item["name"]) if reciter_rank(item["name"]) is not None else 999,
                 item["name"],
+                0 if "حفص عن عاصم" in item["rewaya"] else 1,
                 item["rewaya"],
             )
         )
         reciter_cache = result
     except Exception as error:
         logger.warning("Reciters fetch failed: %s", error)
+        reciter_cache = [ABDULRAHMAN_MOSAD_AUDIO.copy()]
     return reciter_cache
 
 
@@ -607,7 +751,7 @@ async def reciter_keyboard(surah_number: int, page: int) -> list[list[InlineKeyb
         for item in await load_reciters()
         if str(surah_number) in item["surah_list"].split(",")
     ]
-    per_page = 6
+    per_page = 8
     total = max(1, (len(reciters) + per_page - 1) // per_page)
     page = max(0, min(page, total - 1))
     rows = []
@@ -797,12 +941,30 @@ async def show_azkar_category(update: Update, category: str) -> None:
     )
 
 
+def hadith_page_buttons(
+    page: int, total: int
+) -> list[list[InlineKeyboardButton]]:
+    row: list[InlineKeyboardButton] = []
+    if page > 0:
+        row.append(InlineKeyboardButton("السابق", callback_data=f"hadith:{page - 1}"))
+    if page < total - 1:
+        row.append(InlineKeyboardButton("التالي", callback_data=f"hadith:{page + 1}"))
+    rows = [row] if row else []
+    rows.append(
+        [
+            InlineKeyboardButton("رجوع", callback_data="home"),
+            InlineKeyboardButton("القائمة الرئيسية", callback_data="home"),
+        ]
+    )
+    return rows
+
+
 async def show_hadith(update: Update, page: int) -> None:
-    per_page = 1
-    page = max(0, min(page, len(HADITHS) - 1))
-    content, source, number = HADITHS[page]
-    text = f"📚 حديث {page + 1} من {len(HADITHS)}\n\n«{content}»\n\n📖 المصدر: {source}\n🔢 رقم الحديث: {number}"
-    rows = page_buttons(page, len(HADITHS), "hadith", "home")
+    hadiths = load_hadiths()
+    page = max(0, min(page, len(hadiths) - 1))
+    content, source, _number = hadiths[page]
+    text = f"{content}\n\nالمصدر: {source}"
+    rows = hadith_page_buttons(page, len(hadiths))
     await render_screen(update, text, InlineKeyboardMarkup(rows))
 
 
