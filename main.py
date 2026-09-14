@@ -96,7 +96,6 @@ SURAHS = [
     "الكوثر", "الكافرون", "النصر", "المسد", "الإخلاص", "الفلق", "الناس",
 ]
 
-ARABIC_ALPHABET = "ابتثجحخدذرزسشصضطظعغفقكلمنهوي"
 ARABIC_NORMALIZATION = str.maketrans(
     {
         "أ": "ا",
@@ -105,25 +104,6 @@ ARABIC_NORMALIZATION = str.maketrans(
         "ٱ": "ا",
         "ى": "ي",
     }
-)
-
-
-def arabic_sort_key(value: str) -> tuple[tuple[int, ...], str]:
-    normalized = value.translate(ARABIC_NORMALIZATION).replace(" ", "")
-    if normalized.startswith("ال"):
-        normalized = normalized[2:]
-    ranks = tuple(
-        ARABIC_ALPHABET.index(letter)
-        if letter in ARABIC_ALPHABET
-        else len(ARABIC_ALPHABET)
-        for letter in normalized
-    )
-    return ranks, normalized
-
-
-SURAH_MENU = sorted(
-    ((number, name) for number, name in enumerate(SURAHS, start=1)),
-    key=lambda item: arabic_sort_key(item[1]),
 )
 
 POPULAR_RECITER_ALIASES = (
@@ -625,12 +605,14 @@ def page_buttons(page: int, total: int, prefix: str, back: str = "home") -> list
 
 async def show_quran(update: Update, page: int) -> None:
     per_page = 18
-    total_pages = (len(SURAH_MENU) + per_page - 1) // per_page
+    total_pages = (len(SURAHS) + per_page - 1) // per_page
     page = max(0, min(page, total_pages - 1))
     start_index = page * per_page
     buttons = [
-        InlineKeyboardButton(f"{number}. {name}", callback_data=f"surah:{number}")
-        for number, name in SURAH_MENU[start_index : start_index + per_page]
+        InlineKeyboardButton(f"{index + 1}. {name}", callback_data=f"surah:{index + 1}")
+        for index, name in enumerate(
+            SURAHS[start_index : start_index + per_page], start_index
+        )
     ]
     rows = [buttons[i : i + 3] for i in range(0, len(buttons), 3)]
     rows += page_buttons(page, total_pages, "quran", "home")
@@ -692,11 +674,9 @@ async def load_reciters() -> list[dict[str, Any]]:
         return reciter_cache
     try:
         payload = await fetch_json("https://mp3quran.net/api/v3/reciters?language=ar")
-        popular_result: list[dict[str, Any]] = []
-        fallback_result: list[dict[str, Any]] = []
+        result: list[dict[str, Any]] = []
         for reciter in payload.get("reciters", []):
             name = reciter.get("name") or ""
-            rank = reciter_rank(name)
             moshafs = [
                 moshaf
                 for moshaf in reciter.get("moshaf") or []
@@ -708,28 +688,25 @@ async def load_reciters() -> list[dict[str, Any]]:
                 if moshaf.get("rewaya_id") == 1
                 or "حفص عن عاصم" in (moshaf.get("name") or "")
             ]
-            # Prefer the well-known Hafs recording, but keep a usable
-            # recording for a famous reciter when the API labels it differently.
-            selected_moshafs = hafs_moshafs or moshafs[:1]
-            for moshaf in selected_moshafs:
+            # Keep the same broad Hafs list as before: all available reciters
+            # remain visible, while the known names are sorted to the front.
+            for moshaf in hafs_moshafs:
                 if not moshaf.get("server") or not moshaf.get("surah_list"):
                     continue
-                item = {
-                    "moshaf_id": moshaf["id"],
-                    "reciter_id": reciter["id"],
-                    "name": name,
-                    "rewaya": moshaf.get("name") or "الرواية المتاحة",
-                    "server": moshaf["server"],
-                    "surah_list": moshaf["surah_list"],
-                }
-                fallback_result.append(item)
-                if rank is not None:
-                    popular_result.append(item)
+                result.append(
+                    {
+                        "moshaf_id": moshaf["id"],
+                        "reciter_id": reciter["id"],
+                        "name": name,
+                        "rewaya": moshaf.get("name") or "الرواية المتاحة",
+                        "server": moshaf["server"],
+                        "surah_list": moshaf["surah_list"],
+                    }
+                )
 
-        if not any(item["name"] == ABDULRAHMAN_MOSAD_AUDIO["name"] for item in popular_result):
-            popular_result.append(ABDULRAHMAN_MOSAD_AUDIO.copy())
+        if not any(item["name"] == ABDULRAHMAN_MOSAD_AUDIO["name"] for item in result):
+            result.append(ABDULRAHMAN_MOSAD_AUDIO.copy())
 
-        result = popular_result or fallback_result
         result.sort(
             key=lambda item: (
                 reciter_rank(item["name"]) if reciter_rank(item["name"]) is not None else 999,
@@ -751,7 +728,7 @@ async def reciter_keyboard(surah_number: int, page: int) -> list[list[InlineKeyb
         for item in await load_reciters()
         if str(surah_number) in item["surah_list"].split(",")
     ]
-    per_page = 8
+    per_page = 6
     total = max(1, (len(reciters) + per_page - 1) // per_page)
     page = max(0, min(page, total - 1))
     rows = []
