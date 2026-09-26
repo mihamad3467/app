@@ -35,7 +35,7 @@ from telegram.ext import (
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 DB_PATH = DATA_DIR / "quran_bot.sqlite3"
-CHANNEL = os.getenv("CHANNEL_USERNAME", "@Quranthebot")
+CHANNEL = os.getenv("CHANNEL_USERNAME", "@Quran713")
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 try:
     OWNER_ID = int(os.getenv("ADMIN_ID", "0"))
