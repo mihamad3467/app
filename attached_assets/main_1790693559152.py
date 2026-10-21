@@ -82,7 +82,7 @@ SURAHS = [
     "الفاتحة", "البقرة", "آل عمران", "النساء", "المائدة", "الأنعام",
     "الأعراف", "الأنفال", "التوبة", "يونس", "هود", "يوسف", "الرعد",
     "إبراهيم", "الحجر", "النحل", "الإسراء", "الكهف", "مريم", "طه",
-    "الأنبياء", "الحج", "المؤمنون", "النور", "الفرقان", "الشعراء",
+    "الأنبيـاء", "الحج", "المؤمنون", "النور", "الفرقان", "الشعراء",
     "النمل", "القصص", "العنكبوت", "الروم", "لقمان", "السجدة", "الأحزاب",
     "سبأ", "فاطر", "يس", "الصافات", "ص", "الزمر", "غافر", "فصلت",
     "الشورى", "الزخرف", "الدخان", "الجاثية", "الأحقاف", "محمد", "الفتح",
@@ -148,8 +148,6 @@ MIDAD_UMAIR_AUDIO = {
     ),
     "archive_item": "20240327_20240327_1654",
     "audio_files": {
-        # The Archive item contains both a partial clip and a complete
-        # recording. Always select the explicitly complete Rahman file.
         "55": (
             "055  سورة الرحمن كاملة بصوت رائع الشيخ عمير شميم"
             "surat alrahmun kamilat bisawt rayi alshaykh eumayr shamim.mp3"
@@ -178,9 +176,6 @@ MIDAD_UMAIR_AUDIO = {
     },
 }
 
-# Archive.org has a complete, clean recording of Surah Taha by Ghaith
-# Samreen.  The other files in that item are short clips or compilations,
-# so they must not be presented as complete surahs.
 GHAITH_SAMREEN_AUDIO = {
     "moshaf_id": 990003,
     "reciter_id": 990003,
@@ -203,8 +198,6 @@ ABDULRAHMAN_MOSAD_AUDIO = {
     "surah_list": "10,19,23,29,32,49,73,78,87,88,100,107",
 }
 
-# The MP3 Quran API includes several versions for the same reader.  Prefer
-# the well-known recordings and keep one clear button per reader.
 POPULAR_MOSHAF_PRIORITY = (
     "المصحف المجود",
     "تلاوة مميزة",
@@ -224,7 +217,6 @@ def reciter_rank(name: str) -> int | None:
 
 
 def parse_surah_list(value: Any) -> set[int]:
-    """Return valid surah numbers from an API or custom comma-separated list."""
     result: set[int] = set()
     for raw_number in str(value or "").split(","):
         try:
@@ -499,7 +491,6 @@ async def subscription_ok(user_id: int, context: ContextTypes.DEFAULT_TYPE) -> b
 async def notify_new_user_if_needed(
     context: ContextTypes.DEFAULT_TYPE, user: Any
 ) -> None:
-    """Send one profile report to admins after the user passes subscription check."""
     if not claim_entry_report(user.id):
         return
     try:
@@ -640,16 +631,11 @@ async def welcome_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     user = update.effective_user
     text = (
         f"✨ أهلًا يا {user.first_name}، في رفيقك الإيماني ﷺ\n\n"
-        "تم التحقق من اشتراكك في القناة\n\n"
-        "مميزات البوت:\n"
-        "1. القرآن الكريم نصًا كاملًا وصوتًا.\n"
-        "2. أكثر من 100 قارئ ورواية.\n"
-        "3. الأحاديث النبوية (مصادر موثوقة).\n"
-        "4. ألاذكــــار.\n"
-        "5. أيـــام للـــاجـــر.\n"
-        "6. مواقيت الصلاة حسب موقعك.\n\n"
-        "DEV BOT- @dl_r7c\n\n"
-        "اختر قسمًا من القائمة:"
+        "تم التحقق من اشتراكك في القناة\n"
+        "اببوت عباره عن \n"
+        "القران الكريم نصاً وصوتاً لجميع القرئ \n"
+        "المعروفين \n"
+        "DEV BOT- @dl_r7c"
     )
     markup = main_reply_keyboard(include_admin=is_admin(user.id))
     query = update.callback_query
@@ -733,7 +719,6 @@ async def fetch_text(url: str, **kwargs: Any) -> str:
 
 
 async def midad_audio_url(recitation_id: int) -> str:
-    """Get Midad's short-lived signed URL for one verified recitation."""
     page = await fetch_text(f"https://midad.com/recitation/{recitation_id}")
     match = re.search(r'"contentUrl":"([^"]+)"', page)
     if not match:
@@ -794,9 +779,6 @@ async def load_reciters() -> list[dict[str, Any]]:
         result: list[dict[str, Any]] = []
         for reciter in payload.get("reciters", []):
             name = reciter.get("name") or ""
-            # The available external Umair Shamim files are incomplete or
-            # repeated. Do not expose a future API entry until a verified
-            # complete collection is available.
             if "عمير" in name and "شميم" in name:
                 continue
             moshafs = [
@@ -817,18 +799,10 @@ async def load_reciters() -> list[dict[str, Any]]:
                     ),
                     len(POPULAR_MOSHAF_PRIORITY),
                 )
-                # Coverage comes first.  Some readers have a popular
-                # recording with only a few surahs and a complete recording
-                # under another label; choosing by label alone caused missing
-                # surahs in the reader menu.
                 coverage = len(parse_surah_list(moshaf.get("surah_list")))
                 rewaya_priority = 0 if moshaf.get("rewaya_id") == 1 else 1
                 return -coverage, priority, rewaya_priority, moshaf_name
 
-            # One button per reader, using the widest available collection and
-            # then the most recognisable recording among equally complete
-            # collections. Every API item in its surah_list is a whole-surah
-            # file; partial clips are not part of this API's collection model.
             moshaf = min(moshafs, key=moshaf_rank)
             result.append(
                 {
@@ -919,10 +893,6 @@ async def send_reciter_audio(update: Update, surah_number: int, moshaf_id: int) 
         else:
             url = f"{reciter['server'].rstrip('/')}/{surah_number:03d}.mp3"
 
-        # Do not keep a complete surah in RAM.  Long recordings, especially
-        # the full Rahman file, could otherwise be truncated while Telegram
-        # is still receiving the upload. A streamed temporary file also makes
-        # the behaviour identical for Midad, Archive.org, and MP3Quran.
         audio_name = f"{surah_number:03d}.mp3"
         temporary_path: str | None = None
         timeout = httpx.Timeout(connect=20, read=180, write=180, pool=20)
@@ -991,7 +961,6 @@ def timezone_for_name(name: str | None) -> ZoneInfo:
 
 
 def format_time_12(value: str) -> str:
-    """Convert the API's 24-hour HH:MM value to Arabic 12-hour display."""
     raw = value.strip().split(" ")[0]
     try:
         hour, minute = (int(part) for part in raw.split(":", 1))
@@ -1770,8 +1739,6 @@ if __name__ == "__main__":
         level=os.getenv("LOG_LEVEL", "INFO"),
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
-    # HTTPX logs Telegram's token when it formats the request URL at INFO.
-    # Keep transport logs quiet so secrets never reach workflow output.
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
     init_db()
